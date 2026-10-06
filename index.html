@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Triangle Law of Vector Addition - Interactive Simulator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- p5.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <!-- FontAwesome for UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              teal: '#005f52',
+              lightTeal: '#e6f4f1',
+              accentYellow: '#f59e0b',
+              navy: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 10% 20%, #f1f5f9 0%, #e2e8f0 100%);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #canvas-container canvas {
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      display: block;
+      touch-action: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+    .pulse-glow {
+      animation: pulseGlow 1.8s infinite ease-in-out;
+    }
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800 flex flex-col items-center p-3 md:p-6 antialiased">
+
+  <!-- Header section -->
+  <header class="w-full max-w-6xl mb-4 flex flex-col md:flex-row items-center justify-between bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-sm border border-slate-200/80 gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/30">
+        <i class="fa-solid fa-draw-polygon"></i>
+      </div>
+      <div>
+        <h1 class="text-xl md:text-2xl font-heading font-extrabold text-slate-900 tracking-tight">Triangle Law of Vector Addition</h1>
+        <p class="text-xs md:text-sm text-slate-500 font-medium">Interactive physics laboratory & vector geometry sandbox</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <button id="btn-snap-toggle" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200">
+        <i class="fa-solid fa-magnet text-sm"></i>
+        <span id="snap-text">Magnet: ON</span>
+      </button>
+      <button id="btn-reset" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition border border-slate-300">
+        <i class="fa-solid fa-arrow-rotate-left text-sm"></i>
+        <span>Reset Vectors</span>
+      </button>
+      <button id="btn-help" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200">
+        <i class="fa-regular fa-circle-question text-sm"></i>
+        <span>Guide</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+    
+    <!-- Canvas display area (Left / Center) -->
+    <div class="lg:col-span-8 flex flex-col gap-3">
+      <div class="relative bg-white rounded-2xl p-2.5 md:p-3 border border-slate-200/90 shadow-md">
+        <!-- Interactive Canvas Holder -->
+        <div id="canvas-container" class="w-full flex justify-center items-center overflow-hidden bg-slate-50 rounded-xl relative">
+          <!-- Snap prompt banner -->
+          <div id="status-banner" class="absolute top-4 left-4 right-4 bg-slate-900/80 backdrop-blur-md text-white py-2 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-between border border-slate-700 pointer-events-none transition-all duration-300 shadow-lg">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+              <span id="status-message">Drag <strong>Vector B's tail (orange dot)</strong> to <strong>Vector A's arrow head (blue tip)</strong></span>
+            </div>
+            <span id="dist-counter" class="text-slate-300 font-mono text-xs">Distance: -- px</span>
+          </div>
+        </div>
+
+        <!-- Canvas Quick Help Hint Bar -->
+        <div class="mt-2.5 px-3 py-2 flex flex-wrap items-center justify-between text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
+          <div class="flex items-center gap-4">
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> <strong>Vector A</strong> (Body: Move, Tip: Rotate)</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> <strong>Vector B</strong> (Tail: Snap to A, Tip: Rotate)</span>
+            <span class="inline-flex items-center gap-1.5 text-emerald-600 font-semibold"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> <strong>Resultant R</strong></span>
+          </div>
+          <span class="text-[11px] text-slate-400 italic mt-1 sm:mt-0">Touch & Drag handles freely</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Live Status & Verification Card -->
+      <div id="card-state" class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm transition-all duration-300">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 class="text-base font-heading font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-square-root-variable text-emerald-600"></i> Vector Calculations
+          </h2>
+          <span id="badge-status" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+            Unconnected
+          </span>
+        </div>
+
+        <!-- Vector Values Component Grid -->
+        <div class="space-y-3 mt-4 text-xs">
+          <!-- Vector A Card -->
+          <div class="p-3 bg-blue-50/70 border border-blue-100 rounded-xl">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-blue-700 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up-long rotate-45 text-blue-500"></i> Vector A
+              </span>
+              <span id="label-mag-A" class="font-mono font-semibold text-blue-800">|A| = 0.0</span>
+            </div>
+            <div class="grid grid-cols-2 text-slate-600 text-[11px] gap-1">
+              <div>Ax: <span id="val-ax" class="font-mono font-medium text-slate-900">0.0</span></div>
+              <div>Ay: <span id="val-ay" class="font-mono font-medium text-slate-900">0.0</span></div>
+              <div class="col-span-2">Angle θA: <span id="val-ang-a" class="font-mono font-medium text-slate-900">0°</span></div>
+            </div>
+          </div>
+
+          <!-- Vector B Card -->
+          <div class="p-3 bg-amber-50/70 border border-amber-100 rounded-xl">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-amber-700 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up-long rotate-45 text-amber-500"></i> Vector B
+              </span>
+              <span id="label-mag-B" class="font-mono font-semibold text-amber-800">|B| = 0.0</span>
+            </div>
+            <div class="grid grid-cols-2 text-slate-600 text-[11px] gap-1">
+              <div>Bx: <span id="val-bx" class="font-mono font-medium text-slate-900">0.0</span></div>
+              <div>By: <span id="val-by" class="font-mono font-medium text-slate-900">0.0</span></div>
+              <div class="col-span-2">Angle θB: <span id="val-ang-b" class="font-mono font-medium text-slate-900">0°</span></div>
+            </div>
+          </div>
+
+          <!-- Resultant Vector Card -->
+          <div id="card-resultant" class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl transition-all">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="font-bold text-emerald-800 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-trend-up text-emerald-600"></i> Resultant R = A + B
+              </span>
+              <span id="label-mag-R" class="font-mono font-bold text-emerald-700">|R| = 0.0</span>
+            </div>
+            <div class="grid grid-cols-2 text-emerald-950 text-[11px] gap-1 mb-2">
+              <div>Rx = Ax + Bx: <span id="val-rx" class="font-mono font-semibold">0.0</span></div>
+              <div>Ry = Ay + By: <span id="val-ry" class="font-mono font-semibold">0.0</span></div>
+              <div class="col-span-2">Direction θR: <span id="val-ang-r" class="font-mono font-semibold">0.0°</span></div>
+            </div>
+            <div class="bg-white/80 p-2 rounded-lg border border-emerald-200/80 font-mono text-[11px] text-emerald-900 text-center">
+              <span id="formula-algebraic">R = 0.0 î + 0.0 ĵ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm text-xs text-slate-600 space-y-3">
+        <h3 class="font-heading font-bold text-slate-900 text-sm flex items-center gap-2">
+          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Triangle Law Explained
+        </h3>
+        <p class="leading-relaxed">
+          <strong>"Triangle Law of Vector Addition"</strong>: When two vectors are arranged head-to-tail so they represent two adjacent sides of a triangle in continuous order, their vector sum (the <strong>Resultant $\vec{R}$</strong>) is represented both in magnitude and direction by the <strong>closing side of the triangle</strong> drawn from the initial tail of $\vec{A}$ to the final head of $\vec{B}$.
+        </p>
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-1 text-[11px]">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-800">
+            <i class="fa-solid fa-check text-emerald-600"></i> Head-to-Tail Rule:
+          </div>
+          <p class="text-slate-600">Tail of $\vec{B}$ must touch Head of $\vec{A}$. The resultant $\vec{R}$ starts at Tail($\vec{A}$) and ends at Head($\vec{B}$).</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Help / Info Modal -->
+  <div id="modal-guide" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-heading font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-compass-drafting text-emerald-600"></i> How to use the simulator
+        </h3>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <ol class="text-xs text-slate-600 space-y-2.5 list-decimal list-inside leading-relaxed">
+        <li><strong>Vector Movement:</strong> Click and drag anywhere along the stem of <span class="text-blue-600 font-semibold">Vector A</span> or <span class="text-amber-600 font-semibold">Vector B</span> to translate it across the canvas.</li>
+        <li><strong>Rotate / Resize:</strong> Drag the <strong>arrow tips (heads)</strong> or <strong>bases (tails)</strong> to rotate and adjust vector length.</li>
+        <li><strong>Make the Connection:</strong> Drag <span class="text-amber-600 font-semibold">Vector B's tail</span> close to <span class="text-blue-600 font-semibold">Vector A's arrow tip</span>. Within the snap range (~30px), Vector B will magnetically snap into place!</li>
+        <li><strong>Observe Resultant:</strong> Instantly, the closing green arrow <span class="text-emerald-600 font-bold">R = A + B</span> is drawn with particle effects, computing exact component values in real time.</li>
+      </ol>
+      <div class="pt-2">
+        <button id="btn-modal-ok" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition">Got it, let's explore!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State machine and global simulation variables
+    let vecA, vecB;
+    let isSnapped = false;
+    let snapMagnetEnabled = true;
+    const SNAP_THRESHOLD = 32; // pixel radius for snapping
+
+    // Drag tracking
+    let activeDragTarget = null; // 'A_tail', 'A_head', 'A_body', 'B_tail', 'B_head', 'B_body'
+    let dragOffset = { x: 0, y: 0 };
+
+    // Visual particles for celebratory snap
+    let particles = [];
+    let snapAnimationProgress = 0; // for animating the resultant line drawing
+    let gridOrigin;
+
+    // Vector Model Class
+    class VisualVector {
+      constructor(tailX, tailY, headX, headY, colorHex, label, strokeW = 4) {
+        this.tail = createVector(tailX, tailY);
+        this.head = createVector(headX, headY);
+        this.color = colorHex;
+        this.label = label;
+        this.strokeWeight = strokeW;
+        this.handleRadius = 10;
+      }
+
+      get dx() {
+        return this.head.x - this.tail.x;
+      }
+
+      get dy() {
+        // Invert Y for Cartesian system (up is positive)
+        return -(this.head.y - this.tail.y);
+      }
+
+      get magnitude() {
+        return Math.hypot(this.dx, this.dy);
+      }
+
+      get angleDegrees() {
+        let deg = (Math.atan2(this.dy, this.dx) * 180) / Math.PI;
+        return deg < 0 ? deg + 360 : deg;
+      }
+
+      translate(deltaX, deltaY) {
+        this.tail.x += deltaX;
+        this.tail.y += deltaY;
+        this.head.x += deltaX;
+        this.head.y += deltaY;
+      }
+
+      isOverTail(px, py) {
+        return dist(px, py, this.tail.x, this.tail.y) <= this.handleRadius + 4;
+      }
+
+      isOverHead(px, py) {
+        return dist(px, py, this.head.x, this.head.y) <= this.handleRadius + 4;
+      }
+
+      isOverBody(px, py) {
+        // Distance from point to line segment
+        const l2 = dist(this.tail.x, this.tail.y, this.head.x, this.head.y) ** 2;
+        if (l2 === 0) return dist(px, py, this.tail.x, this.tail.y) <= 10;
+        let t = ((px - this.tail.x) * (this.head.x - this.tail.x) + (py - this.tail.y) * (this.head.y - this.tail.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        const projX = this.tail.x + t * (this.head.x - this.tail.x);
+        const projY = this.tail.y + t * (this.head.y - this.tail.y);
+        return dist(px, py, projX, projY) <= 12;
+      }
+
+      draw(isHighlighted = false) {
+        push();
+        const col = color(this.color);
+        stroke(col);
+        fill(col);
+        strokeWeight(this.strokeWeight);
+
+        // Vector line
+        line(this.tail.x, this.tail.y, this.head.x, this.head.y);
+
+        // Arrow tip calculation
+        const arrowAngle = atan2(this.head.y - this.tail.y, this.head.x - this.tail.x);
+        const headSize = 14;
+
+        push();
+        translate(this.head.x, this.head.y);
+        rotate(arrowAngle);
+        noStroke();
+        triangle(0, 0, -headSize, -headSize / 2.2, -headSize, headSize / 2.2);
+        pop();
+
+        // Drag handle endpoints
+        // Tail handle
+        stroke(255);
+        strokeWeight(2);
+        fill(col);
+        circle(this.tail.x, this.tail.y, this.handleRadius * 1.5);
+
+        // Head handle ring
+        noFill();
+        stroke(col);
+        strokeWeight(2);
+        circle(this.head.x, this.head.y, this.handleRadius * 2);
+
+        // Vector Labeling
+        noStroke();
+        fill(30, 41, 59);
+        textFont('Inter');
+        textStyle(BOLD);
+        textSize(14);
+        const midX = (this.tail.x + this.head.x) / 2;
+        const midY = (this.tail.y + this.head.y) / 2;
+        const normAngle = arrowAngle - HALF_PI;
+        const offset = 18;
+        const labelX = midX + offset * cos(normAngle);
+        const labelY = midY + offset * sin(normAngle);
+
+        // Small badge behind text
+        rectMode(CENTER);
+        fill(255, 255, 255, 220);
+        stroke(col);
+        strokeWeight(1);
+        rect(labelX, labelY, 26, 20, 6);
+
+        noStroke();
+        fill(col);
+        textAlign(CENTER, CENTER);
+        text(this.label, labelX, labelY);
+        pop();
+      }
+    }
+
+    // Particle effect for snap celebration
+    class Particle {
+      constructor(x, y, colorStr) {
+        this.pos = createVector(x, y);
+        this.vel = p5.Vector.random2D().mult(random(2, 6));
+        this.lifespan = 255;
+        this.decay = random(8, 16);
+        this.size = random(3, 7);
+        this.color = color(colorStr);
+      }
+      update() {
+        this.pos.add(this.vel);
+        this.vel.mult(0.95);
+        this.lifespan -= this.decay;
+      }
+      draw() {
+        push();
+        noStroke();
+        fill(red(this.color), green(this.color), blue(this.color), this.lifespan);
+        circle(this.pos.x, this.pos.y, this.size);
+        pop();
+      }
+      isDead() {
+        return this.lifespan <= 0;
+      }
+    }
+
+    function setup() {
+      const container = document.getElementById("canvas-container");
+      const initialWidth = Math.min(container.offsetWidth, 720);
+      const initialHeight = Math.max(460, Math.min(540, window.innerHeight * 0.55));
+      const p5Canvas = createCanvas(initialWidth, initialHeight);
+      p5Canvas.parent("canvas-container");
+
+      gridOrigin = createVector(width / 2, height / 2);
+      resetVectorPositions();
+      updateDOMCalculations();
+    }
+
+    function resetVectorPositions() {
+      // Vector A positioned on the left quadrant
+      const ax1 = width * 0.25;
+      const ay1 = height * 0.65;
+      const ax2 = ax1 + 140;
+      const ay2 = ay1 - 80;
+      vecA = new VisualVector(ax1, ay1, ax2, ay2, '#2563eb', 'A', 4);
+
+      // Vector B initially separated to the right
+      const bx1 = width * 0.62;
+      const by1 = height * 0.45;
+      const bx2 = bx1 + 110;
+      const by2 = by1 - 100;
+      vecB = new VisualVector(bx1, by1, bx2, by2, '#d97706', 'B', 4);
+
+      isSnapped = false;
+      snapAnimationProgress = 0;
+      particles = [];
+      updateStatusBanner(false);
+      updateDOMCalculations();
+    }
+
+    function windowResized() {
+      const container = document.getElementById("canvas-container");
+      const targetWidth = Math.min(container.offsetWidth, 720);
+      const targetHeight = Math.max(440, Math.min(540, window.innerHeight * 0.55));
+      resizeCanvas(targetWidth, targetHeight);
+      gridOrigin = createVector(width / 2, height / 2);
+    }
+
+    function draw() {
+      background(255);
+
+      // Draw Cartesian grid and axes
+      drawCoordinateGrid();
+
+      // Check distance between Head of A and Tail of B
+      const headA = vecA.head;
+      const tailB = vecB.tail;
+      const d = dist(headA.x, headA.y, tailB.x, tailB.y);
+
+      // Auto-snap trigger when close enough
+      if (snapMagnetEnabled && d < SNAP_THRESHOLD && !isSnapped) {
+        // Magnetically snap B's tail to A's head
+        const shiftX = headA.x - tailB.x;
+        const shiftY = headA.y - tailB.y;
+        vecB.translate(shiftX, shiftY);
+        triggerSnapSuccess();
+      } else if (d >= SNAP_THRESHOLD + 6 && isSnapped) {
+        // Disconnected if explicitly pulled apart
+        isSnapped = false;
+        snapAnimationProgress = 0;
+        updateStatusBanner(false);
+      }
+
+      // Draw Proximity Target Indicator if unconnected
+      if (!isSnapped) {
+        drawSnapTargetGuide(headA.x, headA.y, tailB.x, tailB.y, d);
+      }
+
+      // Draw Vectors A and B
+      vecA.draw();
+      vecB.draw();
+
+      // If connected (Triangle Law established), draw the Resultant Vector R
+      if (isSnapped) {
+        drawResultantVector();
+      }
+
+      // Render particle bursts if any
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].isDead()) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Update distance HUD
+      updateDistanceReadout(d);
+    }
+
+    // Draws subtle coordinate grid lines and major center axis
+    function drawCoordinateGrid() {
+      stroke(241, 245, 249);
+      strokeWeight(1);
+      const step = 25;
+
+      for (let x = 0; x < width; x += step) {
+        line(x, 0, x, height);
+      }
+      for (let y = 0; y < height; y += step) {
+        line(0, y, width, y);
+      }
+
+      // Center axes subtle dotted lines
+      stroke(203, 213, 225);
+      strokeWeight(1.2);
+      line(0, gridOrigin.y, width, gridOrigin.y);
+      line(gridOrigin.x, 0, gridOrigin.x, height);
+    }
+
+    // Target magnetic rings between Head A and Tail B
+    function drawSnapTargetGuide(hAx, hAy, tBx, tBy, currentDist) {
+      push();
+      // Target circle around Head of A
+      noFill();
+      stroke(37, 99, 235, 120);
+      strokeWeight(1.5);
+      drawingContext.setLineDash([4, 4]);
+      circle(hAx, hAy, SNAP_THRESHOLD * 2);
+      
+      // Connecting dashed guide line if reasonably close
+      if (currentDist < 120) {
+        stroke(245, 158, 11, 180);
+        line(hAx, hAy, tBx, tBy);
+      }
+      drawingContext.setLineDash([]);
+      pop();
+    }
+
+    function drawResultantVector() {
+      push();
+      // Animate stroke expansion initially
+      if (snapAnimationProgress < 1) {
+        snapAnimationProgress = Math.min(1, snapAnimationProgress + 0.08);
+      }
+
+      const startX = vecA.tail.x;
+      const startY = vecA.tail.y;
+      const targetEndX = vecB.head.x;
+      const targetEndY = vecB.head.y;
+
+      // Current animated head
+      const curEndX = lerp(startX, targetEndX, snapAnimationProgress);
+      const curEndY = lerp(startY, targetEndY, snapAnimationProgress);
+
+      // Outer glow for resultant vector
+      stroke(16, 185, 129, 60);
+      strokeWeight(10);
+      line(startX, startY, curEndX, curEndY);
+
+      // Solid vector body
+      stroke(5, 150, 105);
+      strokeWeight(4.5);
+      line(startX, startY, curEndX, curEndY);
+
+      // Arrowhead
+      if (snapAnimationProgress > 0.4) {
+        const arrowAngle = atan2(targetEndY - startY, targetEndX - startX);
+        const headSize = 16;
+        push();
+        translate(curEndX, curEndY);
+        rotate(arrowAngle);
+        fill(5, 150, 105);
+        noStroke();
+        triangle(0, 0, -headSize, -headSize / 2, -headSize, headSize / 2);
+        pop();
+      }
+
+      // Resultant Badge
+      const midX = (startX + targetEndX) / 2;
+      const midY = (startY + targetEndY) / 2;
+      const arrowAngle = atan2(targetEndY - startY, targetEndX - startX);
+      const normAngle = arrowAngle - HALF_PI;
+      const labelX = midX + 22 * cos(normAngle);
+      const labelY = midY + 22 * sin(normAngle);
+
+      rectMode(CENTER);
+      fill(255, 255, 255, 235);
+      stroke(5, 150, 105);
+      strokeWeight(1.5);
+      rect(labelX, labelY, 82, 24, 8);
+
+      fill(4, 120, 87);
+      noStroke();
+      textFont('Inter');
+      textStyle(BOLD);
+      textSize(12);
+      textAlign(CENTER, CENTER);
+      text("R = A + B", labelX, labelY);
+
+      pop();
+    }
+
+    // Trigger celebration when snap successfully forms the triangle
+    function triggerSnapSuccess() {
+      isSnapped = true;
+      snapAnimationProgress = 0;
+
+      // Spawn confetti particles at connection junction
+      for (let i = 0; i < 28; i++) {
+        particles.push(new Particle(vecA.head.x, vecA.head.y, '#10b981'));
+        particles.push(new Particle(vecA.head.x, vecA.head.y, '#f59e0b'));
+      }
+
+      updateStatusBanner(true);
+      updateDOMCalculations();
+    }
+
+    function mousePressed() {
+      if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
+
+      // Priority 1: Handles (Tips and Tails)
+      if (vecB.isOverTail(mouseX, mouseY)) {
+        activeDragTarget = 'B_tail';
+        return;
+      }
+      if (vecB.isOverHead(mouseX, mouseY)) {
+        activeDragTarget = 'B_head';
+        return;
+      }
+      if (vecA.isOverHead(mouseX, mouseY)) {
+        activeDragTarget = 'A_head';
+        return;
+      }
+      if (vecA.isOverTail(mouseX, mouseY)) {
+        activeDragTarget = 'A_tail';
+        return;
+      }
+
+      // Priority 2: Vector Bodies (Translates whole vector)
+      if (vecB.isOverBody(mouseX, mouseY)) {
+        activeDragTarget = 'B_body';
+        dragOffset.x = mouseX - vecB.tail.x;
+        dragOffset.y = mouseY - vecB.tail.y;
+        return;
+      }
+      if (vecA.isOverBody(mouseX, mouseY)) {
+        activeDragTarget = 'A_body';
+        dragOffset.x = mouseX - vecA.tail.x;
+        dragOffset.y = mouseY - vecA.tail.y;
+        return;
+      }
+    }
+
+    function mouseDragged() {
+      if (!activeDragTarget) return;
+
+      const px = mouseX;
+      const py = mouseY;
+
+      if (activeDragTarget === 'A_tail') {
+        const dx = vecA.head.x - vecA.tail.x;
+        const dy = vecA.head.y - vecA.tail.y;
+        vecA.tail.set(px, py);
+        // Maintain head angle or allow resizing: here we reposition tail freely
+      } else if (activeDragTarget === 'A_head') {
+        vecA.head.set(px, py);
+        if (isSnapped) {
+          // Keep B's tail locked to A's head if snapped
+          vecB.translate(px - vecB.tail.x, py - vecB.tail.y);
+        }
+      } else if (activeDragTarget === 'A_body') {
+        const currentDx = vecA.dx;
+        const currentDy = vecA.dy;
+        const oldHeadX = vecA.head.x;
+        const oldHeadY = vecA.head.y;
+        vecA.tail.set(px - dragOffset.x, py - dragOffset.y);
+        vecA.head.set(vecA.tail.x + currentDx, vecA.tail.y - currentDy);
+
+        if (isSnapped) {
+          // B follows A
+          const shiftX = vecA.head.x - oldHeadX;
+          const shiftY = vecA.head.y - oldHeadY;
+          vecB.translate(shiftX, shiftY);
+        }
+      } else if (activeDragTarget === 'B_tail') {
+        const currentDx = vecB.dx;
+        const currentDy = vecB.dy;
+        vecB.tail.set(px, py);
+        vecB.head.set(px + currentDx, py - currentDy);
+      } else if (activeDragTarget === 'B_head') {
+        vecB.head.set(px, py);
+      } else if (activeDragTarget === 'B_body') {
+        const currentDx = vecB.dx;
+        const currentDy = vecB.dy;
+        vecB.tail.set(px - dragOffset.x, py - dragOffset.y);
+        vecB.head.set(vecB.tail.x + currentDx, vecB.tail.y - currentDy);
+      }
+
+      updateDOMCalculations();
+    }
+
+    function mouseReleased() {
+      activeDragTarget = null;
+    }
+
+    function updateDistanceReadout(distanceVal) {
+      const distEl = document.getElementById("dist-counter");
+      if (distEl) {
+        if (isSnapped) {
+          distEl.innerHTML = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-link"></i> Head-to-Tail Locked</span>`;
+        } else {
+          distEl.textContent = `Gap: ${Math.round(distanceVal)} px`;
+        }
+      }
+    }
+
+    function updateStatusBanner(snapped) {
+      const banner = document.getElementById("status-banner");
+      const msg = document.getElementById("status-message");
+      const badge = document.getElementById("badge-status");
+      const cardResultant = document.getElementById("card-resultant");
+
+      if (snapped) {
+        banner.className = "absolute top-4 left-4 right-4 bg-emerald-700/90 backdrop-blur-md text-white py-2.5 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-between border border-emerald-500 shadow-xl transition-all duration-300";
+        msg.innerHTML = `<strong>Triangle Complete!</strong> Resultant vector <span class="text-emerald-200 underline font-bold">R</span> connects tail of A to head of B.`;
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.textContent = "Triangle Law Active";
+        cardResultant.classList.add("ring-2", "ring-emerald-500", "pulse-glow");
+      } else {
+        banner.className = "absolute top-4 left-4 right-4 bg-slate-900/80 backdrop-blur-md text-white py-2 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-between border border-slate-700 transition-all duration-300 shadow-lg";
+        msg.innerHTML = `Drag <strong>Vector B's tail (orange circle)</strong> near <strong>Vector A's tip</strong> to snap.`;
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200";
+        badge.textContent = "Unconnected";
+        cardResultant.classList.remove("ring-2", "ring-emerald-500", "pulse-glow");
+      }
+    }
+
+    function updateDOMCalculations() {
+      // Metric scales (1 grid unit = 10 px)
+      const scale = 0.1;
+      const ax = (vecA.dx * scale).toFixed(1);
+      const ay = (vecA.dy * scale).toFixed(1);
+      const magA = (vecA.magnitude * scale).toFixed(1);
+      const angA = vecA.angleDegrees.toFixed(1);
+
+      const bx = (vecB.dx * scale).toFixed(1);
+      const by = (vecB.dy * scale).toFixed(1);
+      const magB = (vecB.magnitude * scale).toFixed(1);
+      const angB = vecB.angleDegrees.toFixed(1);
+
+      // Resultant components
+      const rxVal = (parseFloat(ax) + parseFloat(bx)).toFixed(1);
+      const ryVal = (parseFloat(ay) + parseFloat(by)).toFixed(1);
+      const magR = Math.hypot(parseFloat(rxVal), parseFloat(ryVal)).toFixed(1);
+      let angR = (Math.atan2(parseFloat(ryVal), parseFloat(rxVal)) * 180) / Math.PI;
+      if (angR < 0) angR += 360;
+
+      // Update A values
+      document.getElementById("label-mag-A").textContent = `|A| = ${magA} u`;
+      document.getElementById("val-ax").textContent = `${ax} î`;
+      document.getElementById("val-ay").textContent = `${ay} ĵ`;
+      document.getElementById("val-ang-a").textContent = `${angA}°`;
+
+      // Update B values
+      document.getElementById("label-mag-B").textContent = `|B| = ${magB} u`;
+      document.getElementById("val-bx").textContent = `${bx} î`;
+      document.getElementById("val-by").textContent = `${by} ĵ`;
+      document.getElementById("val-ang-b").textContent = `${angB}°`;
+
+      // Update Resultant
+      document.getElementById("label-mag-R").textContent = `|R| = ${magR} u`;
+      document.getElementById("val-rx").textContent = `${rxVal} î`;
+      document.getElementById("val-ry").textContent = `${ryVal} ĵ`;
+      document.getElementById("val-ang-r").textContent = `${angR.toFixed(1)}°`;
+      document.getElementById("formula-algebraic").innerHTML = `<strong>R</strong> = (${rxVal}) î + (${ryVal}) ĵ`;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Reset button
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        resetVectorPositions();
+      });
+
+      // Magnet snap toggle button
+      const snapBtn = document.getElementById("btn-snap-toggle");
+      const snapText = document.getElementById("snap-text");
+      snapBtn.addEventListener("click", () => {
+        snapMagnetEnabled = !snapMagnetEnabled;
+        if (snapMagnetEnabled) {
+          snapBtn.className = "flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition border border-emerald-200";
+          snapText.textContent = "Magnet: ON";
+        } else {
+          snapBtn.className = "flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition border border-slate-300";
+          snapText.textContent = "Magnet: OFF";
+        }
+      });
+
+      // Guide Modal toggles
+      const modal = document.getElementById("modal-guide");
+      const openModal = () => modal.classList.remove("hidden");
+      const closeModal = () => modal.classList.add("hidden");
+
+      document.getElementById("btn-help").addEventListener("click", openModal);
+      document.getElementById("btn-close-modal").addEventListener("click", closeModal);
+      document.getElementById("btn-modal-ok").addEventListener("click", closeModal);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+    });
+  </script>
+</body>
+</html>
